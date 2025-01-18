@@ -22,8 +22,8 @@ const upload = async (req, res) => {
 
         // Return the file download link
         return res.json({
-            file: `${process.env.APP_BASE_URL}/files/${response.uuid}`, 
-            // ==>> http://localhost:port/files/uuid
+            file: `${process.env.APP_BASE_URL}/api/file/download/${response.uuid}`, 
+            // ==>> http://localhost:port/api/file/download/uuid  
         });
     } catch (err) {
         console.error('Error during file upload:', err.message);
@@ -31,4 +31,30 @@ const upload = async (req, res) => {
     }
 };
 
-module.exports = { upload };
+// downloading the file
+const download = async (req, res) => {
+    try {
+        //  uuid from request parameters
+        const { uuid } = req.params;
+
+        // Find the file in the database
+        const file = await File.findOne({ uuid });
+        if (!file) {
+            return res.status(404).json({ error: 'File not found' });
+        }
+
+        // Serve the file for download
+        const filePath = path.resolve(file.path); // Ensure full file path
+        return res.download(filePath, file.filename, (err) => {    // res.download
+            if (err) {
+                console.error('Error during file download:', err.message);
+                res.status(500).json({ error: 'Could not download the file' });
+            }
+        });
+    } catch (err) {
+        console.error('Error during file download:', err.message);
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+module.exports = { upload,download };
